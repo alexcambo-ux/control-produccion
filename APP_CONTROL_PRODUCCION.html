@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>CONSTRUCAMBO – Informe Semanal de Producción</title>
+<style>
+  :root{--blue:#1e40af;--light:#f3f4f6;}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial;
+       background:var(--light); margin:0; color:#111827}
+  .app{max-width:1000px; margin:24px auto; background:#fff; border-radius:16px;
+       box-shadow:0 10px 30px rgba(0,0,0,.07); padding:20px}
+  h1{margin:0 0 6px; color:var(--blue)}
+  .sub{color:#6b7280; margin:0 0 18px}
+  .grid{display:grid; gap:12px}
+  .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  @media (max-width:760px){.g2,.g3{grid-template-columns:1fr}}
+  .card{border:1px solid #e5e7eb; border-radius:12px; padding:14px 16px}
+  label{font-size:14px; color:#374151; display:block; margin:6px 0}
+  input, select, textarea{width:100%; padding:10px 12px; border:1px solid #d1d5db;
+         border-radius:10px; outline:none}
+  textarea{min-height:90px}
+  .btn{display:inline-block; border:none; padding:12px 16px; border-radius:10px;
+       font-weight:600; cursor:pointer}
+  .primary{background:var(--blue); color:#fff}
+  .ghost{background:#eef2ff; color:#1e3a8a}
+  .danger{background:#dc2626; color:#fff}
+  .toolbar{display:flex; gap:10px; flex-wrap:wrap}
+  .thumbs{display:flex; gap:10px; flex-wrap:wrap; margin-top:8px}
+  .thumb{width:110px; height:80px; object-fit:cover; border-radius:8px; border:1px solid #e5e7eb}
+  .muted{color:#6b7280; font-size:12px}
+  .divider{height:1px; background:#e5e7eb; margin:10px 0 4px}
+  .table{width:100%; border-collapse:collapse; font-size:14px}
+  .table th,.table td{border:1px solid #e5e7eb; padding:8px 10px; text-align:left}
+  .pill{display:inline-block; padding:2px 8px; border-radius:999px; background:#eef2ff; color:#1e3a8a; font-size:12px}
+</style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>CONSTRUCAMBO – Informe Semanal de Producción</h1>
+      <p class="sub">Formulario + Generación de PDF con fotos</p>
+    </header>
+
+    <section class="card">
+      <div class="grid g3">
+        <div>
+          <label>Fecha del informe</label>
+          <input type="date" id="fechaInforme">
+        </div>
+        <div>
+          <label>Responsable</label>
+          <input type="text" id="responsable" placeholder="Nombre del encargado">
+        </div>
+        <div>
+          <label>Semana (opcional)</label>
+          <input type="text" id="semana" placeholder="Ej: 2025-W32">
+        </div>
+      </div>
+    </section>
+
+    <section class="grid g2">
+      <div class="card">
+        <h3>Resumen</h3>
+        <div class="grid g3">
+          <div>
+            <label>Máquinas terminadas</label>
+            <input type="number" id="terminadas" min="0" value="0">
+          </div>
+          <div>
+            <label>Máquinas enviadas / liquidadas</label>
+            <input type="number" id="enviadas" min="0" value="0">
+          </div>
+          <div>
+            <label>Máquinas en producción (total)</label>
+            <input type="number" id="enProduccion" min="0" value="0">
+          </div>
+        </div>
+        <div class="grid g3" style="margin-top:10px">
+          <div>
+            <label>En etapa Inicial</label>
+            <input type="number" id="etapaInicial" min="0" value="0">
+          </div>
+          <div>
+            <label>En etapa Medio</label>
+            <input type="number" id="etapaMedio" min="0" value="0">
+          </div>
+          <div>
+            <label>En etapa Final</label>
+            <input type="number" id="etapaFinal" min="0" value="0">
+          </div>
+        </div>
+        <p class="muted">Sugerencia: <span class="pill">enProducción = Inicial + Medio + Final</span></p>
+      </div>
+
+      <div class="card">
+        <h3>Materiales urgentes faltantes</h3>
+        <textarea id="materiales" placeholder="Ej.: Motores GX160 (2), Triplex 18mm (10), Pintura anticorrosiva (4 gal)"></textarea>
+        <div class="divider"></div>
+        <h3>Observaciones generales</h3>
+        <textarea id="observaciones" placeholder="Notas de calidad, cuellos de botella, mantenimientos, riesgos, etc."></textarea>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>Evidencia fotográfica (estado de máquinas)</h3>
+      <label>Subir imágenes (puedes seleccionar varias):</label>
+      <input type="file" id="fotos" accept="image/*" multiple />
+      <p class="muted">Formatos: JPG/PNG. Las fotos aparecerán en la vista previa y se incluirán en el PDF.</p>
+      <div id="preview" class="thumbs"></div>
+    </section>
+
+    <section class="card">
+      <div class="toolbar">
+        <button class="btn ghost" id="btnPreview">Ver vista previa en pantalla</button>
+        <button class="btn primary" id="btnPDF">Descargar PDF</button>
+        <button class="btn danger" id="btnLimpiar">Limpiar formulario</button>
+      </div>
+    </section>
+
+    <section id="renderPreview" class="card" style="display:none">
+      <h3>Vista previa del informe</h3>
+      <p class="muted">Esta es una representación. El PDF llevará el mismo contenido y las fotos adjuntas.</p>
+      <div id="previewHTML"></div>
+    </section>
+  </div>
+
+  <!-- jsPDF desde CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+  <script>
+    // --- Utilidades de imágenes ---
+    const fotosInput = document.getElementById('fotos');
+    const previewStrip = document.getElementById('preview');
+    let imagenesDataURL = []; // guardamos dataURL para insertar en PDF
+
+    fotosInput.addEventListener('change', async (e) => {
+      imagenesDataURL = [];
+      previewStrip.innerHTML = '';
+      const files = Array.from(e.target.files || []);
+      for (const file of files) {
+        if (!file.type.startsWith('image/')) continue;
+        const dataUrl = await fileToDataURL(file);
+        imagenesDataURL.push(dataUrl);
+        const img = document.createElement('img');
+        img.src = dataUrl;
+        img.className = 'thumb';
+        previewStrip.appendChild(img);
+      }
+    });
+
+    function fileToDataURL(file){
+      return new Promise((res, rej)=>{
+        const reader = new FileReader();
+        reader.onload = () => res(reader.result);
+        reader.onerror = rej;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // --- Vista previa HTML ---
+    document.getElementById('btnPreview').addEventListener('click', ()=>{
+      const data = collectData();
+      const html = buildPreviewHTML(data, imagenesDataURL);
+      const render = document.getElementById('renderPreview');
+      document.getElementById('previewHTML').innerHTML = html;
+      render.style.display = 'block';
+      window.scrollTo({ top: render.offsetTop - 20, behavior: 'smooth' });
+    });
+
+    // --- Generar PDF ---
+    document.getElementById('btnPDF').addEventListener('click', async ()=>{
+      const data = collectData();
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' }); // 595x842pt aprox
+      const marginX = 40, marginY = 44, line = 18;
+
+      // Encabezado
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(16);
+      doc.setTextColor(30,64,175);
+      doc.text('CONSTRUCAMBO – Informe Semanal de Producción', marginX, marginY);
+      doc.setTextColor(17,24,39);
+      doc.setFontSize(11);
+      doc.setFont('helvetica','normal');
+
+      let y = marginY + 24;
+      doc.text(`Fecha del informe: ${data.fecha || '-'}`, marginX, y); y+=line;
+      doc.text(`Responsable: ${data.responsable || '-'}`, marginX, y); y+=line;
+      doc.text(`Semana: ${data.semana || '-'}`, marginX, y); y+=line*1.2;
+
+      // Resumen
+      doc.setFont('helvetica','bold'); doc.setFontSize(12);
+      doc.text('Resumen', marginX, y); y+=line;
+      doc.setFont('helvetica','normal'); doc.setFontSize(11);
+      doc.text(`Máquinas terminadas: ${data.terminadas}`, marginX, y); y+=line;
+      doc.text(`Máquinas enviadas/liquidadas: ${data.enviadas}`, marginX, y); y+=line;
+      doc.text(`Máquinas en producción (total): ${data.enProduccion}`, marginX, y); y+=line;
+      doc.text(`Etapas → Inicial: ${data.etapaInicial} | Medio: ${data.etapaMedio} | Final: ${data.etapaFinal}`, marginX, y); y+=line*1.2;
+
+      // Materiales
+      doc.setFont('helvetica','bold'); doc.setFontSize(12);
+      doc.text('Materiales urgentes faltantes', marginX, y); y+=line;
+      doc.setFont('helvetica','normal'); doc.setFontSize(11);
+      y = addMultilineText(doc, data.materiales || '-', marginX, y, 515, line);
+      y+=line*0.7;
+
+      // Observaciones
+      doc.setFont('helvetica','bold'); doc.setFontSize(12);
+      doc.text('Observaciones generales', marginX, y); y+=line;
+      doc.setFont('helvetica','normal'); doc.setFontSize(11);
+      y = addMultilineText(doc, data.observaciones || '-', marginX, y, 515, line);
+      y+=line;
+
+      // Imágenes
+      if (imagenesDataURL.length){
+        doc.setFont('helvetica','bold'); doc.setFontSize(12);
+        if (y > 700) { doc.addPage(); y = marginY; }
+        doc.text('Evidencia fotográfica', marginX, y); y+=line;
+
+        const imgW = 160, imgH = 110; // tamaño uniforme por foto
+        const colGap = 12;
+        let x = marginX;
+
+        for (let i=0; i<imagenesDataURL.length; i++){
+          // salto de página si no cabe
+          if (y + imgH > 800){ doc.addPage(); y = marginY; x = marginX; }
+          try{
+            doc.addImage(imagenesDataURL[i], 'JPEG', x, y, imgW, imgH);
+          }catch{
+            // intenta como PNG si falla
+            doc.addImage(imagenesDataURL[i], 'PNG', x, y, imgW, imgH);
+          }
+          x += imgW + colGap;
+          // 3 por fila aprox
+          if (x + imgW > 595 - marginX){ x = marginX; y += imgH + colGap; }
+        }
+        y += line;
+      }
+
+      // Pie
+      if (y > 800){ doc.addPage(); y = marginY; }
+      doc.setDrawColor(229,231,235);
+      doc.line(marginX, 820, 595 - marginX, 820);
+      doc.setFontSize(9);
+      doc.setTextColor(107,114,128);
+      doc.text('Generado automáticamente – CONSTRUCAMBO', marginX, 835);
+
+      const nombre = `Informe_Produccion_${(data.semana||data.fecha||'sin_fecha').replaceAll(' ','_')}.pdf`;
+      doc.save(nombre);
+    });
+
+    // --- Helpers ---
+    function collectData(){
+      return {
+        fecha: document.getElementById('fechaInforme').value,
+        responsable: document.getElementById('responsable').value.trim(),
+        semana: document.getElementById('semana').value.trim(),
+        terminadas: +document.getElementById('terminadas').value || 0,
+        enviadas: +document.getElementById('enviadas').value || 0,
+        enProduccion: +document.getElementById('enProduccion').value || 0,
+        etapaInicial: +document.getElementById('etapaInicial').value || 0,
+        etapaMedio: +document.getElementById('etapaMedio').value || 0,
+        etapaFinal: +document.getElementById('etapaFinal').value || 0,
+        materiales: document.getElementById('materiales').value.trim(),
+        observaciones: document.getElementById('observaciones').value.trim()
+      };
+    }
+
+    function addMultilineText(doc, text, x, y, maxWidth, lineHeight){
+      const lines = doc.splitTextToSize(text, maxWidth);
+      lines.forEach(l => { doc.text(l, x, y); y += lineHeight; });
+      return y;
+    }
+
+    document.getElementById('btnLimpiar').addEventListener('click', ()=>{
+      document.querySelectorAll('input, textarea').forEach(el=>{
+        if (el.type === 'date') el.value = '';
+        else if (el.type === 'file') { el.value = ''; imagenesDataURL = []; previewStrip.innerHTML=''; }
+        else el.value = '';
+      });
+      document.getElementById('renderPreview').style.display='none';
+    });
+
+    function buildPreviewHTML(d, imgs){
+      const fotos = imgs.map(src=>`<img class="thumb" src="${src}">`).join('');
+      return `
+        <table class="table">
+          <tr><th style="width:220px">Fecha del informe</th><td>${d.fecha || '-'}</td></tr>
+          <tr><th>Responsable</th><td>${d.responsable || '-'}</td></tr>
+          <tr><th>Semana</th><td>${d.semana || '-'}</td></tr>
+        </table>
+        <br/>
+        <table class="table">
+          <tr><th colspan="4">Resumen</th></tr>
+          <tr>
+            <td>Terminadas: <b>${d.terminadas}</b></td>
+            <td>Enviadas/liquidadas: <b>${d.enviadas}</b></td>
+            <td>En producción (total): <b>${d.enProduccion}</b></td>
+            <td>Etapas → Inicial: <b>${d.etapaInicial}</b> | Medio: <b>${d.etapaMedio}</b> | Final: <b>${d.etapaFinal}</b></td>
+          </tr>
+        </table>
+        <br/>
+        <table class="table">
+          <tr><th>Materiales urgentes faltantes</th></tr>
+          <tr><td>${(d.materiales||'-').replace(/\\n/g,'<br>')}</td></tr>
+        </table>
+        <br/>
+        <table class="table">
+          <tr><th>Observaciones generales</th></tr>
+          <tr><td>${(d.observaciones||'-').replace(/\\n/g,'<br>')}</td></tr>
+        </table>
+        <br/>
+        <div><b>Evidencia fotográfica:</b></div>
+        <div class="thumbs">${fotos || '<span class="muted">Sin fotos adjuntas</span>'}</div>
+      `;
+    }
+
+    // Setear fecha por defecto = hoy
+    (function setToday(){
+      const el = document.getElementById('fechaInforme');
+      const t = new Date();
+      const pad = n => String(n).padStart(2,'0');
+      el.value = `${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())}`;
+    })();
+  </script>
+</body>
+</html>
